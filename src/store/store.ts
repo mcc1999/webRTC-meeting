@@ -1,10 +1,11 @@
-import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
-import counterReducer from '../features/counter/counterSlice';
-
+import { configureStore, ThunkAction, Action } from "@reduxjs/toolkit";
+import roomReducer from "./roomSlice";
 export const store = configureStore({
   reducer: {
-    counter: counterReducer,
+    room: roomReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({ serializableCheck: false }),
 });
 
 export type AppDispatch = typeof store.dispatch;
