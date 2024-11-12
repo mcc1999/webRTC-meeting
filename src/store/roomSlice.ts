@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createLocalStreamAsyncAction } from "./thunks";
+import { RTCEndpoint } from "../utils/webRTC";
+import { castDraft } from "immer";
 
 export interface Member {
   identify: string;
@@ -7,16 +9,17 @@ export interface Member {
   isRoomHost: boolean;
   videoMuted: boolean;
   audioMuted: boolean;
-  shareScreen: boolean;
+  shareScreen?: boolean;
   mediaStream: MediaStream | null;
 }
-export interface InitState {
+export interface RoomState {
   self: Member;
   roomId: string;
+  rtcEndpoints: Record<string, RTCEndpoint>;
   memberList: Member[];
 }
 
-const initState: InitState = {
+const initState: RoomState = {
   self: {
     identify: "",
     memberId: "",
@@ -27,6 +30,7 @@ const initState: InitState = {
     mediaStream: null,
   },
   roomId: "",
+  rtcEndpoints: {},
   memberList: [],
 };
 
@@ -40,6 +44,43 @@ const roomSlice = createSlice({
     setSelfAction(state, action: PayloadAction<Partial<Member>>) {
       state.self = { ...state.self, ...action.payload };
     },
+    addNewMemberAction(state, action: PayloadAction<Member>) {
+      state.memberList.push(action.payload);
+    },
+    removeMemberAction(state, action: PayloadAction<{ memberId: string }>) {
+      state.memberList = state.memberList.filter(
+        (m) => m.memberId !== action.payload.memberId
+      );
+      const rtcEndpoint = state.rtcEndpoints[action.payload.memberId];
+      if (rtcEndpoint) rtcEndpoint.destroy();
+      delete state.rtcEndpoints[action.payload.memberId];
+    },
+    setRTCEndpointAction(
+      state,
+      action: PayloadAction<{ memberId: string; rtcEndpoint: RTCEndpoint }>
+    ) {
+      state.rtcEndpoints[action.payload.memberId] = castDraft(
+        action.payload.rtcEndpoint
+      );
+    },
+    leaveRoomRTCCleanAction(state) {
+      Object.values(state.rtcEndpoints).forEach((rtcEndpoint) => {
+        rtcEndpoint.destroy();
+      });
+      if (state.self.mediaStream) {
+        state.self.mediaStream.getTracks().forEach((t) => t.stop());
+      }
+      if (state.memberList.length) {
+        state.memberList.forEach((member) => {
+          if (member.mediaStream) {
+            member.mediaStream.getTracks().forEach((t) => t.stop());
+          }
+        });
+      }
+    },
+    resetRoomStateAction() {
+      return initState;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(createLocalStreamAsyncAction.fulfilled, (state, action) => {
@@ -48,5 +89,13 @@ const roomSlice = createSlice({
   },
 });
 
-export const { setRoomIdAction, setSelfAction } = roomSlice.actions;
+export const {
+  setRoomIdAction,
+  setSelfAction,
+  resetRoomStateAction,
+  addNewMemberAction,
+  setRTCEndpointAction,
+  removeMemberAction,
+  leaveRoomRTCCleanAction,
+} = roomSlice.actions;
 export default roomSlice.reducer;

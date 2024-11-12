@@ -1,4 +1,4 @@
-export function getVideoPosition(memberId: string, memberNum: number) {
+export function getVideoPosition(memberNum: number, isRoomHost: boolean, index: number) {
   /**
    * 1. 1人时，默认为正中心
    * 2. 2人时，host左，1人右
@@ -19,36 +19,39 @@ export function getVideoPosition(memberId: string, memberNum: number) {
     // 只能是host，videoContainer下最大的16:9
     res = { ...biggestRectangleInside(width, height, 0, 0) };
   } else if (memberNum === 2) {
-    if (memberId === "member0") {
+    const { w, h, top, left } = biggestRectangleInside(width, height, 0, 0);
+    if (isRoomHost) {
       // host
-      res = { ...biggestRectangleInside(width / 2, height, 0, 0) };
+      res = { ...biggestRectangleInside(w / 2, h, left, top) };
     } else {
-      res = { ...biggestRectangleInside(width / 2, height, width / 2, 0) };
+      res = { ...biggestRectangleInside(w / 2, h, left + w / 2, top) };
     }
   } else if (memberNum === 3) {
-    if (memberId === "member0") {
+    const { w, h, top, left } = biggestRectangleInside(width, height, 0, 0);
+    if (isRoomHost) {
       // host
-      res = { ...biggestRectangleInside(width / 2, height, 0, 0) };
-    } else if (memberId === "member1") {
-      res = { ...biggestRectangleInside(width / 2, height / 2, width / 2, 0) };
+      res = { ...biggestRectangleInside(w / 2, h, left, top) };
+    } else if (index === 1) {
+      res = { ...biggestRectangleInside(w / 2, h / 2, left + w / 2, top) };
     } else {
       res = {
-        ...biggestRectangleInside(width / 2, height / 2, width / 2, height / 2),
+        ...biggestRectangleInside(w / 2, h / 2, left + w / 2, top + h / 2),
       };
     }
   } else if (memberNum === 4) {
-    if (memberId === "member0") {
+    const { w, h, top, left } = biggestRectangleInside(width, height, 0, 0);
+    if (isRoomHost) {
       // host
-      res = { ...biggestRectangleInside(width / 2, height / 2, 0, 0) };
-    } else if (memberId === "member1") {
-      res = { ...biggestRectangleInside(width / 2, height / 2, width / 2, 0) };
-    } else if (memberId === "member2") {
+      res = { ...biggestRectangleInside(w / 2, h / 2, left, top) };
+    } else if (index === 1) {
+      res = { ...biggestRectangleInside(w / 2, h / 2, left + w / 2, top) };
+    } else if (index === 2) {
       res = {
-        ...biggestRectangleInside(width / 2, height / 2, 0, height / 2),
+        ...biggestRectangleInside(w / 2, h / 2, left, top + h / 2),
       };
     } else {
       res = {
-        ...biggestRectangleInside(width / 2, height / 2, width / 2, height / 2),
+        ...biggestRectangleInside(w / 2, h / 2, left + w / 2, top + h / 2),
       };
     }
   }

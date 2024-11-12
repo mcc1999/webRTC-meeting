@@ -22,6 +22,7 @@ import {
 } from "../../utils/webRTC";
 import { setSelfAction } from "../../store/roomSlice";
 import { getVideoPosition } from "../../utils/videoLayout";
+import { useNavigate } from "react-router-dom";
 
 const VideoSection: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -35,10 +36,28 @@ const VideoSection: React.FC = () => {
       video: !videoMuted ? defaultVideoConstraints : false,
       audio: false /** DUMMY, !audioMuted */,
       // audio: !audioMuted ? defaultAudioConstraints : false,
-    }).then((stream) => {
-      dispatch(setSelfAction({ mediaStream: stream }));
-      setLoading(false);
-    });
+    })
+      .then((stream) => {
+        dispatch(setSelfAction({ mediaStream: stream }));
+        setLoading(false);
+      })
+      .catch((e) => {
+        switch (e.name) {
+          case "NotFoundError":
+            alert(
+              "Unable to open your call because no camera and/or microphone" +
+                "were found."
+            );
+            break;
+          case "SecurityError":
+          case "PermissionDeniedError":
+            // Do nothing; this is the same as the user canceling the call.
+            break;
+          default:
+            alert("Error opening your camera and/or microphone: " + e.message);
+            break;
+        }
+      });
     ignore.current = true;
   }, []);
 
@@ -141,6 +160,14 @@ const VideosContainer: React.FC = () => {
       resizeObserver.disconnect();
     };
   }, []);
+  console.log(
+    "videoContainer all members",
+    [self, ...memberList].sort((a, b) => {
+      if (a.isRoomHost) return -1;
+      if (b.isRoomHost) return 1;
+      return a.memberId.localeCompare(b.memberId);
+    })
+  );
 
   return (
     <div
@@ -149,17 +176,26 @@ const VideosContainer: React.FC = () => {
       className="w-full h-[calc(100vh-64px)] bg-gray-300 relative"
     >
       {[self, ...memberList]
-        .sort((a, b) => a.memberId.localeCompare(b.memberId))
-        .map(({ memberId, audioMuted, videoMuted, mediaStream }) => (
-          <OutputVideo
-            key={memberId}
-            rect={getVideoPosition(memberId, memberList.length + 1)}
-            memberId={memberId}
-            audioMuted={audioMuted}
-            videoMuted={videoMuted}
-            mediaStream={mediaStream!}
-          />
-        ))}
+        .sort((a, b) => {
+          if (a.isRoomHost) return -1;
+          if (b.isRoomHost) return 1;
+          return a.memberId.localeCompare(b.memberId);
+        })
+        .map(
+          (
+            { memberId, audioMuted, videoMuted, mediaStream, isRoomHost },
+            index
+          ) => (
+            <OutputVideo
+              key={memberId}
+              rect={getVideoPosition(memberList.length + 1, isRoomHost, index)}
+              memberId={memberId}
+              audioMuted={audioMuted}
+              videoMuted={videoMuted}
+              mediaStream={mediaStream!}
+            />
+          )
+        )}
     </div>
   );
 };
@@ -217,8 +253,12 @@ const VideoButton: React.FC = () => {
 };
 const LeaveRoomButton: React.FC = () => {
   const isRoomHost = useAppSelector((state) => state.room.self.isRoomHost);
+  const navigate = useNavigate();
   return (
-    <div className="mx-[16px] px-[24px] py-[8px] bg-red-500 hover:bg-red-400 rounded-full text-white text-sm cursor-pointer">
+    <div
+      className="mx-[16px] px-[24px] py-[8px] bg-red-500 hover:bg-red-400 rounded-full text-white text-sm cursor-pointer"
+      onClick={() => navigate("/")}
+    >
       {isRoomHost ? "结束会议" : "离开会议"}
     </div>
   );

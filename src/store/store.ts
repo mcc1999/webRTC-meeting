@@ -1,8 +1,11 @@
 import { configureStore, ThunkAction, Action } from "@reduxjs/toolkit";
 import roomReducer from "./roomSlice";
+import wssReducer from "./wssSlice";
+
 export const store = configureStore({
   reducer: {
     room: roomReducer,
+    wss: wssReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }),

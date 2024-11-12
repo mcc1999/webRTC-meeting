@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch } from "../../hooks/hooks";
 import { setSelfAction, setRoomIdAction } from "../../store/roomSlice";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { getRoomIdExists } from "../../api";
+import { getRoomIdExistsReq, createRoomReq } from "../../api";
 import Checkbox from "../../components/Checkbox";
 
 const JoinRoomPage: React.FC = () => {
@@ -20,10 +20,6 @@ const JoinRoomPage: React.FC = () => {
     if (isHost) {
       dispatch(setSelfAction({ isRoomHost: isHost }));
     }
-
-    return () => {
-      !isHost && dispatch(setSelfAction({ isRoomHost: false }));
-    };
   }, []);
 
   function validParams() {
@@ -40,7 +36,7 @@ const JoinRoomPage: React.FC = () => {
     }
   }
   async function joinRoom() {
-    const { roomExists, full, memberId } = await getRoomIdExists(roomId);
+    const { roomExists, full, memberId } = await getRoomIdExistsReq(roomId);
 
     if (!roomExists) {
       setErrMessage("会议房间不存在，请验证会议ID有效性！");
@@ -48,14 +44,16 @@ const JoinRoomPage: React.FC = () => {
       if (full) {
         setErrMessage("会议房间人数已满，请稍后再试！");
       } else {
-        dispatch(setRoomIdAction({roomId}));
+        dispatch(setRoomIdAction({ roomId }));
         dispatch(setSelfAction({ memberId }));
         navigate(`/room`);
       }
     }
   }
   async function createRoom() {
-    dispatch(setSelfAction({ memberId: "member0" }));
+    const { roomId, memberId } = await createRoomReq();
+    dispatch(setRoomIdAction({ roomId }));
+    dispatch(setSelfAction({ memberId }));
     navigate(`/room`);
   }
 

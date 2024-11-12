@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { AiFillPhone } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
+import { useAppDispatch } from "../../hooks/hooks";
+import { resetRoomStateAction } from "../../store/roomSlice";
+import { resetWssStateAction } from "../../store/wssSlice";
 
 const IntroductionPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   function pushToJoinRoomPage(isHost = false) {
     navigate(`/join-room${isHost ? "?host=true" : ""}`);
   }
+
+  useEffect(() => {
+    dispatch(resetRoomStateAction());
+    dispatch(resetWssStateAction());
+  }, []);
 
   return (
     <div className="flex justify-center items-center h-screen w-full">
@@ -48,7 +57,9 @@ const ConnectionButton: React.FC<IConnectionButton> = ({
     : " border hover:border-blue-500 hover:text-blue-500";
   return (
     <button
-      className={"block px-[64px] py-[2px] my-[16px] rounded-lg text-sm" + btnClass}
+      className={
+        "block px-[64px] py-[2px] my-[16px] rounded-lg text-sm" + btnClass
+      }
       onClick={onClickHandler}
     >
       {buttonText}
