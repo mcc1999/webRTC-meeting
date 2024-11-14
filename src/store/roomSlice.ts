@@ -12,11 +12,18 @@ export interface Member {
   shareScreen?: boolean;
   mediaStream: MediaStream | null;
 }
+export interface Message {
+  // sender
+  identify: string;
+  message: string;
+  timestamp: number;
+}
 export interface RoomState {
   self: Member;
   roomId: string;
   rtcEndpoints: Record<string, RTCEndpoint>;
   memberList: Member[];
+  chatMessageList: Message[];
 }
 
 const initState: RoomState = {
@@ -32,6 +39,7 @@ const initState: RoomState = {
   roomId: "",
   rtcEndpoints: {},
   memberList: [],
+  chatMessageList: [],
 };
 
 const roomSlice = createSlice({
@@ -78,6 +86,9 @@ const roomSlice = createSlice({
         });
       }
     },
+    addChatMessage(state, action: PayloadAction<Message>) {
+      state.chatMessageList.push(action.payload);
+    },
     resetRoomStateAction() {
       return initState;
     },
@@ -97,5 +108,6 @@ export const {
   setRTCEndpointAction,
   removeMemberAction,
   leaveRoomRTCCleanAction,
+  addChatMessage,
 } = roomSlice.actions;
 export default roomSlice.reducer;

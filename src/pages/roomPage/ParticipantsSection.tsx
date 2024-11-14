@@ -1,4 +1,5 @@
 import React from "react";
+import { useAppSelector } from "../../hooks/hooks";
 
 const ParticipantsSection: React.FC = () => {
   return (
@@ -11,29 +12,21 @@ const ParticipantsSection: React.FC = () => {
 export default ParticipantsSection;
 
 const ParticipantsList: React.FC = () => {
-  const dummyParticipants = [
-    {
-      identify: "John Doe",
-    },
-    {
-      identify: "Jane Doe",
-    },
-    {
-      identify: "Jimmy Doe",
-    },
-  ];
+  const memberList = useAppSelector((state) => state.room.memberList);
+  const self = useAppSelector((state) => state.room.self);
+
   return (
     <div className="">
       <div className="p-[16px] pb-0 pl-[24px] flex justify-start items-center text-sm text-gray-400">
         <span>参与人员</span>
-        <span>(共{}人)</span>
+        <span>(共{memberList.length + 1}人)</span>
       </div>
       <div className="p-[16px]">
-        {dummyParticipants.map((item, index) => (
+        {[self, ...memberList].map((item, index) => (
           <Participant
             key={index}
             identify={item.identify}
-            lastItem={index === dummyParticipants.length - 1}
+            lastItem={index === memberList.length}
           />
         ))}
       </div>
@@ -47,7 +40,9 @@ interface IParticipant {
 const Participant: React.FC<IParticipant> = ({ identify, lastItem }) => {
   return (
     <div>
-      <div className="p-[8px] text-sm">{identify}</div>
+      <div className="p-[8px] text-sm truncate" title={identify}>
+        {identify}
+      </div>
       {!lastItem && <div className="border-b-2" />}
     </div>
   );

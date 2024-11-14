@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { io, Socket } from "socket.io-client";
 import { AppDispatch, RootState } from "./store";
 import { castDraft } from "immer";
-import { stat } from "fs";
 
 export interface WssState {
   wssUrl: string;
