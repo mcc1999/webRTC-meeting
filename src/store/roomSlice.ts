@@ -11,18 +11,21 @@ export interface Member {
   audioMuted: boolean;
   shareScreen?: boolean;
   mediaStream: MediaStream | null;
+  privateMessageList?: Message[];
 }
 export interface Message {
   // sender
   identify: string;
   message: string;
-  timestamp: number;
+  memberId: string;
+  timestamp?: number;
 }
 export interface RoomState {
   self: Member;
   roomId: string;
   rtcEndpoints: Record<string, RTCEndpoint>;
   memberList: Member[];
+  privateChatMemberId: string;
   chatMessageList: Message[];
 }
 
@@ -39,6 +42,7 @@ const initState: RoomState = {
   roomId: "",
   rtcEndpoints: {},
   memberList: [],
+  privateChatMemberId: '',
   chatMessageList: [],
 };
 
@@ -89,6 +93,25 @@ const roomSlice = createSlice({
     addChatMessage(state, action: PayloadAction<Message>) {
       state.chatMessageList.push(action.payload);
     },
+    addPrivateChatMessage(
+      state,
+      action: PayloadAction<{ message: Message; memberId: string }>
+    ) {
+      state.memberList = state.memberList.map((m) => {
+        if (m.memberId === action.payload.memberId) {
+          state.privateChatMemberId = action.payload.memberId;
+          if (m.privateMessageList) {
+            m.privateMessageList.push(action.payload.message);
+          } else {
+            m.privateMessageList = [action.payload.message];
+          }
+        }
+        return m;
+      });
+    },
+    setPrivateChatMemberIdAction(state, action: PayloadAction<string>) {
+      state.privateChatMemberId = action.payload;
+    },
     toggleMemberAudioVideoStatusAction(
       state,
       action: PayloadAction<{
@@ -128,6 +151,8 @@ export const {
   removeMemberAction,
   leaveRoomRTCCleanAction,
   addChatMessage,
+  addPrivateChatMessage,
   toggleMemberAudioVideoStatusAction,
+  setPrivateChatMemberIdAction,
 } = roomSlice.actions;
 export default roomSlice.reducer;

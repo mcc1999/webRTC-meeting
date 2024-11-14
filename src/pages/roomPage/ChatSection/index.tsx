@@ -8,6 +8,7 @@ import MessageList from "./MessageList";
 const ChatSection: React.FC = () => {
   const socket = useAppSelector((state) => state.wss.socket);
   const dispatch = useAppDispatch();
+  const chatMessageList = useAppSelector((state) => state.room.chatMessageList);
 
   useEffect(() => {
     if (!socket) return;
@@ -23,10 +24,15 @@ const ChatSection: React.FC = () => {
   return (
     <div className="w-1/5 h-screen">
       <div>
-        <div className="text-gray-400 text-sm pl-[24px] my-[8px]">聊天室</div>
-        <MessageList />
+        <div className="text-white text-sm pl-[24px] py-[8px] bg-gradient-to-b from-blue-700 to-cyan-600">
+          聊天室
+        </div>
+        <MessageList
+          chatMessageList={chatMessageList}
+          height="calc(100vh - 36px - 64px)"
+        />
       </div>
-      <MessageSender />
+      <MessageSender type="chat" />
     </div>
   );
 };

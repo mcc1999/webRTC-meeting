@@ -1,5 +1,10 @@
 import { Socket } from "socket.io-client";
-import { addNewMemberAction, setSelfAction } from "../store/roomSlice";
+import {
+  addNewMemberAction,
+  addPrivateChatMessage,
+  Message,
+  setSelfAction,
+} from "../store/roomSlice";
 import { store } from "../store/store";
 import { Topic } from "./socket";
 import { getMemberInfoReq } from "../api";
@@ -169,6 +174,8 @@ export class RTCEndpoint {
   ignoreOffer: boolean;
   polite: boolean;
 
+  datachannel: RTCDataChannel;
+
   constructor(options: RTCEndpointInitOptions) {
     this.pc = this.createPeerConnection();
     const defaultOptions = {
@@ -200,6 +207,14 @@ export class RTCEndpoint {
     this.pc.onsignalingstatechange = this._signalingStateChange.bind(this);
     this.pc.ontrack = this._trackEvent.bind(this);
     this.pc.onconnectionstatechange = this._connectionStateChange.bind(this);
+
+    // data channel
+    this.pc.ondatachannel = this._remoteDatachannel.bind(this);
+    this.datachannel = this.pc.createDataChannel("private chat");
+    this.datachannel.onopen = this._datachannelOpen.bind(this);
+    this.datachannel.onclose = this._datachannelClose.bind(this);
+    this.datachannel.onmessage = this._datachannelMessage.bind(this);
+    this.datachannel.onerror = this._datachannelError.bind(this);
 
     // 信令服务器监听
     this.options.socket.on(
@@ -352,6 +367,40 @@ export class RTCEndpoint {
       " ===="
     );
   }
+  _remoteDatachannel(e: RTCDataChannelEvent) {
+    console.log(
+      "==== [RTCEndpoint _remoteDataChannel] receive remote data channel ===="
+    );
+    this.datachannel = e.channel;
+    this.datachannel.onopen = this._datachannelOpen.bind(this);
+    this.datachannel.onclose = this._datachannelClose.bind(this);
+    this.datachannel.onerror = this._datachannelError.bind(this);
+    this.datachannel.onmessage = this._datachannelMessage.bind(this);
+  }
+
+  // data channel event
+  _datachannelOpen() {
+    console.log("==== [RTCEndpoint _datachannelOpen] datachannel open ====");
+  }
+  _datachannelClose() {
+    console.log("==== [RTCEndpoint _datachannelClose] datachannel close ====");
+  }
+  _datachannelError() {
+    console.log("==== [RTCEndpoint _datachannelError] datachannel error ====");
+  }
+  _datachannelMessage(event: MessageEvent) {
+    const eventData = JSON.parse(event.data);
+    console.log(
+      "==== [RTCEndpoint _datachannelMessage] datachannel message ====",
+      eventData
+    );
+    store.dispatch(
+      addPrivateChatMessage({
+        memberId: eventData.memberId || "",
+        message: eventData,
+      })
+    );
+  }
 
   /** 处理远端通过wss发来的 video-offer 事件 */
   async handleVideoOfferMsg(data: any) {
@@ -440,6 +489,20 @@ export class RTCEndpoint {
       "==== [RTCEndpoint createLocalStream] localStream",
       this.localStream
     );
+  }
+
+  sendDataChannelMessage(message: Message) {
+    if (this.datachannel.readyState !== "open") {
+      console.error("Datachannel未打开!");
+    } else {
+      this.datachannel.send(JSON.stringify(message));
+      store.dispatch(
+        addPrivateChatMessage({
+          memberId: this.options.target,
+          message: message,
+        })
+      );
+    }
   }
 
   addLocalStream2RTCPeerConnection() {

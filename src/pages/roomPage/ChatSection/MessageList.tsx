@@ -3,11 +3,10 @@ import { VariableSizeList } from "react-window";
 import { useAppSelector } from "../../../hooks/hooks";
 import { Message } from "../../../store/roomSlice";
 
-const MessageList: React.FC = () => {
+const MessageList: React.FC<{chatMessageList: Message[], height: string}> = ({chatMessageList, height}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<VariableSizeList>(null);
   const rowHeights = useRef<Record<number, number>>({});
-  const chatMessageList = useAppSelector((state) => state.room.chatMessageList);
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -36,7 +35,7 @@ const MessageList: React.FC = () => {
     );
   };
   return (
-    <div ref={containerRef} className="h-[calc(100vh-36px-64px)] border">
+    <div ref={containerRef} className="border" style={{height}}>
       {containerRef.current && (
         <VariableSizeList
           ref={listRef}
