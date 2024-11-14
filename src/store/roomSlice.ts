@@ -89,6 +89,25 @@ const roomSlice = createSlice({
     addChatMessage(state, action: PayloadAction<Message>) {
       state.chatMessageList.push(action.payload);
     },
+    toggleMemberAudioVideoStatusAction(
+      state,
+      action: PayloadAction<{
+        kind: "video" | "audio";
+        memberId: string;
+        mute: boolean;
+      }>
+    ) {
+      state.memberList = state.memberList.map((m) => {
+        if (m.memberId === action.payload.memberId) {
+          if (action.payload.kind === "video") {
+            m.videoMuted = action.payload.mute;
+          } else {
+            m.audioMuted = action.payload.mute;
+          }
+        }
+        return m;
+      });
+    },
     resetRoomStateAction() {
       return initState;
     },
@@ -109,5 +128,6 @@ export const {
   removeMemberAction,
   leaveRoomRTCCleanAction,
   addChatMessage,
+  toggleMemberAudioVideoStatusAction,
 } = roomSlice.actions;
 export default roomSlice.reducer;

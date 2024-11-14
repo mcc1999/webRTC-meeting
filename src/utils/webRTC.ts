@@ -24,6 +24,10 @@ export async function muteAudio() {
   if (audioTrack) {
     audioTrack.enabled = false;
     store.dispatch(setSelfAction({ audioMuted: true }));
+    store.getState().wss.socket?.emit(Topic.AUDIO_STATUS_CHANGE, {
+      mute: true,
+      memberId: store.getState().room.self.memberId,
+    });
   }
 }
 export async function unmuteAudio() {
@@ -41,12 +45,20 @@ export async function unmuteAudio() {
     localStream.addTrack(newAudioTrack);
   }
   store.dispatch(setSelfAction({ audioMuted: false }));
+  store.getState().wss.socket?.emit(Topic.AUDIO_STATUS_CHANGE, {
+    mute: false,
+    memberId: store.getState().room.self.memberId,
+  });
 }
 export async function muteVideo() {
   const videoTrack = getValidTrack("video");
   if (videoTrack) {
     videoTrack.enabled = false;
     store.dispatch(setSelfAction({ videoMuted: true }));
+    store.getState().wss.socket?.emit(Topic.VIDEO_STATUS_CHANGE, {
+      mute: true,
+      memberId: store.getState().room.self.memberId,
+    });
   }
 }
 export async function unmuteVideo() {
@@ -64,6 +76,10 @@ export async function unmuteVideo() {
     localStream.addTrack(newVideoTrack);
   }
   store.dispatch(setSelfAction({ videoMuted: false }));
+  store.getState().wss.socket?.emit(Topic.VIDEO_STATUS_CHANGE, {
+    mute: false,
+    memberId: store.getState().room.self.memberId,
+  });
 }
 export async function startShareScreen() {
   const localStream = store.getState().room.self.mediaStream;
@@ -431,6 +447,61 @@ export class RTCEndpoint {
     this.localStream.getTracks().forEach((track) => {
       this.pc.addTrack(track, this.localStream!);
     });
+  }
+
+  getValidTrack(kind: "video" | "audio"): MediaStreamTrack | undefined {
+    if (!this.localStream) return;
+    if (kind === "video") return this.localStream.getVideoTracks()[0];
+    else if (kind === "audio") return this.localStream.getAudioTracks()[0];
+    return;
+  }
+  async toggleAudioStatus(mute: boolean) {
+    if (!this.localStream) return;
+    const audioTrack = this.getValidTrack("audio");
+    if (!mute) {
+      // 打开声音,若没有audioTrack,则创建一个
+      if (!audioTrack) {
+        const audioStream = await navigator.mediaDevices.getUserMedia({
+          video: false,
+          audio: this.options.audioConstraints,
+        });
+        this.localStream.addTrack(audioStream.getAudioTracks()[0]);
+      } else {
+        audioTrack.enabled = !mute;
+      }
+    } else {
+      if (!audioTrack) return;
+      audioTrack.enabled = !mute;
+    }
+    this.options.socket.emit(Topic.AUDIO_STATUS_CHANGE, {
+      memberId: this.options.memberId,
+      mute,
+    });
+    store.dispatch(setSelfAction({ audioMuted: mute }));
+  }
+  async toggleVideoStatus(mute: boolean) {
+    if (!this.localStream) return;
+    const videoTrack = this.getValidTrack("video");
+    if (!mute) {
+      // 打开摄像头画面若没有videoTrack,则创建一个
+      if (!videoTrack) {
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: this.options.videoConstraints,
+        });
+        this.localStream.addTrack(videoStream.getVideoTracks()[0]);
+      } else {
+        videoTrack.enabled = !mute;
+      }
+    } else {
+      if (!videoTrack) return;
+      videoTrack.enabled = !mute;
+    }
+    this.options.socket.emit(Topic.VIDEO_STATUS_CHANGE, {
+      memberId: this.options.memberId,
+      mute,
+    });
+    store.dispatch(setSelfAction({ videoMuted: mute }));
   }
 
   destroy() {

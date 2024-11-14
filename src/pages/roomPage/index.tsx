@@ -13,6 +13,7 @@ import {
   leaveRoomRTCCleanAction,
   removeMemberAction,
   setRTCEndpointAction,
+  toggleMemberAudioVideoStatusAction,
 } from "../../store/roomSlice";
 
 const RoomPage: React.FC = () => {
@@ -41,6 +42,7 @@ const RoomPage: React.FC = () => {
       console.log("==== [WS-MSG: CONNECT] ws connected ====");
       dispatch(setConnectedAction({ connected: true }));
     });
+
     socket.on(Topic.MEMBER_JOIN, ({ memberId }) => {
       console.log(`==== [WS_MSG: MEMBER_JOIN] 成员${memberId}加入房间====`);
       if (selfMemberId === memberId) return;
@@ -97,10 +99,38 @@ const RoomPage: React.FC = () => {
         );
       }
     });
-
     socket.on(Topic.ROOM_DISBAND, () => {
       console.log("==== [WS-MSG: ROOM_DISBAND] 房间解散 ====");
       navigate("/");
+    });
+    socket.on(Topic.AUDIO_STATUS_CHANGE, ({ memberId, mute }) => {
+      console.log(
+        `==== [WS-MSG: AUDIO_STATUS_CHANGE] 成员${memberId}的音频状态为${
+          mute ? "关闭" : "开启"
+        } ===`
+      );
+      if (memberId !== selfMemberId) {
+        dispatch(
+          toggleMemberAudioVideoStatusAction({ kind: "audio", memberId, mute })
+        );
+      }
+    });
+    socket.on(Topic.VIDEO_STATUS_CHANGE, ({ memberId, mute }) => {
+      console.log(
+        `==== [WS-MSG: VIDEO_STATUS_CHANGE] 成员${memberId}的视频状态为${
+          mute ? "关闭" : "开启"
+        } ===`
+      );
+
+      if (memberId !== selfMemberId) {
+        dispatch(
+          toggleMemberAudioVideoStatusAction({
+            kind: "video",
+            memberId,
+            mute,
+          })
+        );
+      }
     });
 
     socket.on("disconnect", () => {

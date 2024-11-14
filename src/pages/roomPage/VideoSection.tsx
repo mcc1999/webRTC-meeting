@@ -34,8 +34,8 @@ const VideoSection: React.FC = () => {
     if (ignore.current) return;
     createLocalStream({
       video: !videoMuted ? defaultVideoConstraints : false,
-      audio: false /** DUMMY, !audioMuted */,
-      // audio: !audioMuted ? defaultAudioConstraints : false,
+      // audio: false /** DUMMY, !audioMuted */,
+      audio: !audioMuted ? defaultAudioConstraints : false,
     })
       .then((stream) => {
         dispatch(setSelfAction({ mediaStream: stream }));
